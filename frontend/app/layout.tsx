@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { ThemeProvider } from "@/components/theme/theme-provider";
 
 export const metadata: Metadata = {
   title: "NexWealth — Futuristic Financial Intelligence & Portfolio Hub",
@@ -12,9 +13,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
-      <body className="bg-background text-white antialiased min-h-screen">
-        {children}
+    <html lang="en" suppressHydrationWarning>
+      <body className="bg-background text-foreground antialiased min-h-screen transition-colors duration-200">
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );

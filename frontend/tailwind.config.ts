@@ -10,19 +10,19 @@ const config: Config = {
     extend: {
       colors: {
         background: {
-          DEFAULT: "#060d13",
-          surface: "#0a151f",
-          elevated: "#0f1f2d",
+          DEFAULT: "var(--background)",
+          surface: "var(--background-surface)",
+          elevated: "var(--background-elevated)",
         },
         card: {
-          DEFAULT: "#0c1824",
-          hover: "#102130",
-          subtle: "#08121a",
+          DEFAULT: "var(--card)",
+          hover: "var(--card-hover)",
+          subtle: "var(--card-subtle)",
         },
         cyan: {
           DEFAULT: "#00f2fe",
           glow: "rgba(0, 242, 254, 0.25)",
-          subtle: "rgba(0, 242, 254, 0.12)",
+          subtle: "var(--cyan-subtle)",
           400: "#00d2eb",
           500: "#00f2fe",
           600: "#00b4cc",
@@ -30,17 +30,18 @@ const config: Config = {
         mint: {
           DEFAULT: "#00f5a0",
           glow: "rgba(0, 245, 160, 0.25)",
-          subtle: "rgba(0, 245, 160, 0.12)",
+          subtle: "var(--mint-subtle)",
           400: "#34d399",
           500: "#00f5a0",
           600: "#10b981",
         },
         border: {
-          subtle: "rgba(255, 255, 255, 0.06)",
-          light: "rgba(255, 255, 255, 0.1)",
-          accent: "rgba(0, 242, 254, 0.25)",
-          mint: "rgba(0, 245, 160, 0.25)",
+          subtle: "var(--border-subtle)",
+          light: "var(--border-light)",
+          accent: "var(--border-accent)",
+          mint: "var(--border-mint)",
         },
+        foreground: "var(--foreground)",
       },
       fontFamily: {
         sans: ["Plus Jakarta Sans", "-apple-system", "sans-serif"],

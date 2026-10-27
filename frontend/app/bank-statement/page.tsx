@@ -40,6 +40,10 @@ export default function BankStatementPage() {
   // Upload Form State
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [accountName, setAccountName] = useState<string>("HDFC Salary Account (..4081)");
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  });
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState<boolean>(false);
 
@@ -93,13 +97,17 @@ export default function BankStatementPage() {
       setUploadError("Please specify the Bank Account / Identifier.");
       return;
     }
+    if (!selectedMonth) {
+      setUploadError("Please select the statement month.");
+      return;
+    }
 
     setIsUploading(true);
     setUploadError(null);
 
     try {
-      const stmt = await uploadBankStatement(selectedFile, accountName.trim());
-      setSuccessMessage(`Bank statement "${stmt.fileName}" uploaded & parsed successfully.`);
+      const stmt = await uploadBankStatement(selectedFile, accountName.trim(), selectedMonth);
+      setSuccessMessage(`Bank statement "${stmt.fileName}" for ${selectedMonth} uploaded & parsed successfully.`);
       setSelectedFile(null);
       await fetchStatementList();
       setTimeout(() => setSuccessMessage(null), 3500);
@@ -246,7 +254,21 @@ export default function BankStatementPage() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto">
+            {/* Statement Month */}
+            <div>
+              <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                📅 Statement Month *
+              </label>
+              <input
+                type="month"
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                className="w-full rounded-md border border-border-subtle hover:border-border-accent bg-background text-white text-sm px-3 py-2 focus:outline-none focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500 cursor-pointer"
+              />
+              <p className="text-[10px] text-slate-500 mt-1">Transactions will be dated to this month</p>
+            </div>
+
             {/* Account Name */}
             <div>
               <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">

@@ -15,6 +15,8 @@ import {
   updateInvestment,
   deleteInvestment,
 } from "@/lib/api/investment";
+import { getSavingsOverview, SavingsOverview } from "@/lib/api/goal";
+
 import {
   Plus,
   Pencil,
@@ -61,12 +63,19 @@ export default function InvestmentsPage() {
   // Success Notification State
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  // User Savings Pool State
+  const [savingsOverview, setSavingsOverview] = useState<SavingsOverview | null>(null);
+
   const fetchInvestmentList = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await getInvestments();
-      setInvestments(data);
+      const [invData, savingsData] = await Promise.all([
+        getInvestments(),
+        getSavingsOverview(),
+      ]);
+      setInvestments(invData);
+      setSavingsOverview(savingsData);
     } catch (err: unknown) {
       const msg =
         err instanceof Error ? err.message : "Failed to load investment records";
@@ -79,6 +88,10 @@ export default function InvestmentsPage() {
   useEffect(() => {
     fetchInvestmentList();
   }, [fetchInvestmentList]);
+
+  const effectiveAvailableSavings =
+    (savingsOverview?.unallocatedSavings || 0) +
+    (editingInvestment ? Number(editingInvestment.investedAmount) || 0 : 0);
 
   // Open Add Modal
   const handleOpenAddModal = () => {
@@ -127,15 +140,18 @@ export default function InvestmentsPage() {
       errors.type = "Investment type is required.";
     }
 
-    const invested = parseFloat(formData.investedAmount);
-    if (!formData.investedAmount || isNaN(invested) || invested <= 0) {
+    const invested = parseFloat(formData.investedAmount || "0");
+    if (isNaN(invested) || invested <= 0) {
       errors.investedAmount = "Invested amount must be greater than 0.";
+    } else if (invested > effectiveAvailableSavings) {
+      errors.investedAmount = `Invested amount (${formatINR(invested)}) cannot exceed your available liquid savings pool of ${formatINR(effectiveAvailableSavings)}.`;
     }
 
     const current = parseFloat(formData.currentValue);
     if (formData.currentValue === "" || isNaN(current) || current < 0) {
       errors.currentValue = "Current value must be 0 or greater.";
     }
+
 
     if (!formData.date) {
       errors.date = "Investment date is required.";
@@ -361,11 +377,11 @@ export default function InvestmentsPage() {
           </div>
           <div
             className={`font-display font-black text-2xl ${
-              summary.returnPercent >= 0 ? "text-mint-400" : "text-red-400"
+              (Number(summary.returnPercent) || 0) >= 0 ? "text-mint-400" : "text-red-400"
             }`}
           >
-            {summary.returnPercent >= 0 ? "+" : ""}
-            {summary.returnPercent.toFixed(2)}%
+            {(Number(summary.returnPercent) || 0) >= 0 ? "+" : ""}
+            {(Number(summary.returnPercent) || 0).toFixed(2)}%
           </div>
           <div className="text-[11px] text-slate-500 mt-2">Total ROI on deployed capital</div>
         </Card>
@@ -498,6 +514,25 @@ export default function InvestmentsPage() {
               </button>
             </div>
 
+            {/* Savings Pool Info Banner */}
+            <div className="mb-4 p-3 rounded-lg bg-cyan-subtle border border-border-accent text-xs">
+              <div className="flex justify-between items-center text-cyan-300 font-bold mb-1">
+                <span>Available Liquid Savings:</span>
+                <span className="font-mono text-sm text-white">
+                  {formatINR(effectiveAvailableSavings)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-slate-400 text-[11px] mb-1">
+                <span>Monthly Savings Flow:</span>
+                <span className="text-mint-400 font-bold">
+                  {formatINR(savingsOverview?.monthlySavings || 0)}/mo
+                </span>
+              </div>
+              <div className="text-[10px] text-slate-400 pt-1.5 border-t border-border-subtle/50">
+                💡 <span className="text-slate-300">Invested principal is deducted from your savings. When valuation exceeds invested capital, net gains are credited to total savings.</span>
+              </div>
+            </div>
+
             <form onSubmit={handleSubmit} className="space-y-4">
               {formErrors.submit && (
                 <div className="p-3 rounded-sm bg-red-500/10 border border-red-500/30 text-xs text-red-400 flex items-center gap-2">
@@ -558,12 +593,16 @@ export default function InvestmentsPage() {
                     type="number"
                     step="0.01"
                     min="0.01"
+                    max={effectiveAvailableSavings}
                     value={formData.investedAmount}
                     onChange={(e) =>
                       setFormData({ ...formData, investedAmount: e.target.value })
                     }
                     placeholder="e.g., 50000"
                   />
+                  <span className="text-[10px] text-slate-400 mt-1 block">
+                    Drawn from available savings. Max: {formatINR(effectiveAvailableSavings)}
+                  </span>
                   {formErrors.investedAmount && (
                     <div className="text-xs text-red-400 mt-1">
                       {formErrors.investedAmount}
@@ -572,6 +611,7 @@ export default function InvestmentsPage() {
                 </div>
 
                 {/* Current Valuation */}
+
                 <div>
                   <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
                     Current Valuation (₹) *

@@ -55,9 +55,37 @@ def get_dashboard_summary(db: Session, user_id: str) -> DashboardSummaryResponse
     else:
         savings_rate = Decimal("0.00")
 
+    # 5. Previous savings from initial liquid reserves
+    prev_savings_sum = (
+        db.query(func.coalesce(func.sum(Income.amount), Decimal("0.00")))
+        .filter(
+            Income.userId == user_id,
+            Income.source == "Previous Savings & Liquid Reserves",
+        )
+        .scalar()
+    )
+    previous_savings = Decimal(str(prev_savings_sum or 0)).quantize(
+        Decimal("0.01"), rounding=ROUND_HALF_UP
+    )
+
+    # 6. Monthly salary stream
+    salary_sum = (
+        db.query(func.coalesce(func.sum(Income.amount), Decimal("0.00")))
+        .filter(
+            Income.userId == user_id,
+            Income.source == "Monthly Salary & Professional Income",
+        )
+        .scalar()
+    )
+    monthly_salary = Decimal(str(salary_sum or 0)).quantize(
+        Decimal("0.01"), rounding=ROUND_HALF_UP
+    )
+
     return DashboardSummaryResponse(
         totalIncome=total_income,
         totalExpenses=total_expenses,
         availableSavings=available_savings,
         savingsRate=savings_rate,
+        previousSavings=previous_savings,
+        monthlySalary=monthly_salary,
     )

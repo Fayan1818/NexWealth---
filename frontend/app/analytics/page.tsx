@@ -21,6 +21,7 @@ import {
   ArrowUpRight,
   Sparkles,
 } from "lucide-react";
+import { useTheme } from "@/components/theme/theme-provider";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -48,6 +49,8 @@ const CATEGORY_COLORS = [
 ];
 
 export default function AnalyticsPage() {
+  const { theme } = useTheme();
+  const isLight = theme === "light";
   const [analytics, setAnalytics] = useState<AnalyticsSummary | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -94,8 +97,8 @@ export default function AnalyticsPage() {
     percentage: c.percentage,
   }));
 
-  const isNetSavingsPositive = overview.availableSavings >= 0;
-  const isInvestmentPositive = investment.gainLoss >= 0;
+  const isNetSavingsPositive = (Number(overview.availableSavings) || 0) >= 0;
+  const isInvestmentPositive = (Number(investment.gainLoss) || 0) >= 0;
 
   return (
     <AppShell>
@@ -231,10 +234,10 @@ export default function AnalyticsPage() {
             ) : (
               <div
                 className={`font-display font-black text-2xl ${
-                  overview.savingsRate >= 0 ? "text-mint-400" : "text-red-400"
+                  (Number(overview.savingsRate) || 0) >= 0 ? "text-mint-400" : "text-red-400"
                 }`}
               >
-                {overview.savingsRate.toFixed(1)}%
+                {(Number(overview.savingsRate) || 0).toFixed(1)}%
               </div>
             )}
             <div className="text-[11px] text-slate-500 mt-2">Efficiency ratio</div>
@@ -280,29 +283,56 @@ export default function AnalyticsPage() {
                 <AreaChart data={monthlyData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                   <defs>
                     <linearGradient id="incomeGlow" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#00f2fe" stopOpacity={0.35} />
-                      <stop offset="95%" stopColor="#00f2fe" stopOpacity={0} />
+                      <stop
+                        offset="5%"
+                        stopColor={isLight ? "#0284c7" : "#00f2fe"}
+                        stopOpacity={isLight ? 0.45 : 0.35}
+                      />
+                      <stop
+                        offset="95%"
+                        stopColor={isLight ? "#0284c7" : "#00f2fe"}
+                        stopOpacity={0}
+                      />
                     </linearGradient>
                     <linearGradient id="expenseGlow" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#00f5a0" stopOpacity={0.25} />
-                      <stop offset="95%" stopColor="#00f5a0" stopOpacity={0} />
+                      <stop
+                        offset="5%"
+                        stopColor={isLight ? "#059669" : "#00f5a0"}
+                        stopOpacity={isLight ? 0.35 : 0.25}
+                      />
+                      <stop
+                        offset="95%"
+                        stopColor={isLight ? "#059669" : "#00f5a0"}
+                        stopOpacity={0}
+                      />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                  <XAxis dataKey="month" stroke="#64748b" fontSize={11} tickLine={false} />
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke={isLight ? "#cbd5e1" : "rgba(255,255,255,0.08)"}
+                  />
+                  <XAxis
+                    dataKey="month"
+                    stroke={isLight ? "#475569" : "#94a3b8"}
+                    fontSize={11}
+                    tickLine={false}
+                  />
                   <YAxis
-                    stroke="#64748b"
+                    stroke={isLight ? "#475569" : "#94a3b8"}
                     fontSize={11}
                     tickLine={false}
                     tickFormatter={(val) => `₹${val >= 1000 ? `${(val / 1000).toFixed(0)}k` : val}`}
                   />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "#0c1824",
-                      borderColor: "rgba(0,242,254,0.3)",
+                      backgroundColor: isLight ? "#ffffff" : "#0c1824",
+                      borderColor: isLight ? "#0284c7" : "rgba(0,242,254,0.4)",
                       borderRadius: "8px",
-                      color: "#fff",
+                      color: isLight ? "#0f172a" : "#ffffff",
                       fontSize: "12px",
+                      boxShadow: isLight
+                        ? "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)"
+                        : "none",
                     }}
                     formatter={(value: any) => [formatINR(Number(value)), ""]}
                   />
@@ -310,7 +340,7 @@ export default function AnalyticsPage() {
                     type="monotone"
                     dataKey="income"
                     name="Income"
-                    stroke="#00f2fe"
+                    stroke={isLight ? "#0284c7" : "#00f2fe"}
                     strokeWidth={2.5}
                     fillOpacity={1}
                     fill="url(#incomeGlow)"
@@ -319,8 +349,8 @@ export default function AnalyticsPage() {
                     type="monotone"
                     dataKey="expenses"
                     name="Expenses"
-                    stroke="#00f5a0"
-                    strokeWidth={2}
+                    stroke={isLight ? "#059669" : "#00f5a0"}
+                    strokeWidth={2.2}
                     fillOpacity={1}
                     fill="url(#expenseGlow)"
                   />
@@ -363,6 +393,8 @@ export default function AnalyticsPage() {
                     outerRadius={75}
                     paddingAngle={3}
                     dataKey="value"
+                    stroke={isLight ? "#ffffff" : "#0c1824"}
+                    strokeWidth={2}
                   >
                     {pieData.map((_, index) => (
                       <Cell
@@ -373,11 +405,14 @@ export default function AnalyticsPage() {
                   </Pie>
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "#0c1824",
-                      borderColor: "rgba(0,242,254,0.3)",
+                      backgroundColor: isLight ? "#ffffff" : "#0c1824",
+                      borderColor: isLight ? "#0284c7" : "rgba(0,242,254,0.4)",
                       borderRadius: "8px",
-                      color: "#fff",
+                      color: isLight ? "#0f172a" : "#ffffff",
                       fontSize: "12px",
+                      boxShadow: isLight
+                        ? "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)"
+                        : "none",
                     }}
                     formatter={(val: any) => [formatINR(Number(val)), ""]}
                   />
@@ -452,12 +487,12 @@ export default function AnalyticsPage() {
                 investment.returnPercent >= 0 ? "text-mint-400" : "text-red-400"
               }`}
             >
-              {investment.returnPercent >= 0 ? (
+              {Number(investment.returnPercent || 0) >= 0 ? (
                 <ArrowUpRight className="w-4 h-4" />
               ) : (
                 <TrendingDown className="w-4 h-4" />
               )}
-              <span>{investment.returnPercent >= 0 ? "+" : ""}{investment.returnPercent.toFixed(2)}%</span>
+              <span>{Number(investment.returnPercent || 0) >= 0 ? "+" : ""}{(Number(investment.returnPercent) || 0).toFixed(2)}%</span>
             </div>
           </div>
         </div>
@@ -500,7 +535,7 @@ export default function AnalyticsPage() {
                         {formatINR(cat.amount)}
                       </span>
                       <span className="text-slate-400 font-bold min-w-12 text-right">
-                        {cat.percentage.toFixed(1)}%
+                        {(Number(cat.percentage) || 0).toFixed(1)}%
                       </span>
                     </div>
                   </div>

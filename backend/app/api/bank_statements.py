@@ -5,7 +5,7 @@ All endpoints require JWT authentication.
 """
 import os
 from decimal import Decimal
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Form
 from sqlalchemy.orm import Session
 
@@ -61,6 +61,7 @@ def create_statement_endpoint(
 async def upload_statement_endpoint(
     file: UploadFile = File(...),
     accountName: str = Form("HDFC Salary Account"),
+    statementMonth: Optional[str] = Form(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -140,6 +141,12 @@ def get_statement_endpoint(
 
 
 @bank_statement_router.get(
+    "/{statement_id}/parse",
+    response_model=BankStatementParseResult,
+    status_code=status.HTTP_200_OK,
+    summary="Extract and preview transactions from statement file",
+)
+@bank_statement_router.post(
     "/{statement_id}/parse",
     response_model=BankStatementParseResult,
     status_code=status.HTTP_200_OK,

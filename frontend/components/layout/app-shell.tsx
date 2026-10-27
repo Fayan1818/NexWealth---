@@ -16,7 +16,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
   }, [router]);
 
   return (
-    <div className="flex min-h-screen w-full bg-background text-white selection:bg-cyan-500 selection:text-background">
+    <div className="flex min-h-screen w-full bg-background text-foreground transition-colors duration-200 selection:bg-cyan-500 selection:text-background">
       <Sidebar />
       <div className="ml-64 flex-1 flex flex-col min-w-0 min-h-screen">
         <Header />

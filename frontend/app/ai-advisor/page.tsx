@@ -31,12 +31,13 @@ import {
 } from "lucide-react";
 
 const SUGGESTED_PROMPTS = [
-  "What are my biggest spending categories?",
-  "How much am I saving monthly?",
-  "How am I progressing toward my goals?",
-  "What should I improve in my spending?",
-  "Give me an overview of my finances.",
+  "How can I buy a ₹15 Lakh car by 2028 with my savings?",
+  "Break down my monthly expenses vs savings buffer.",
+  "What is my recommended SIP allocation for 2028?",
+  "How much emergency reserve should I keep before buying my car?",
+  "Give me an executive roadmap to optimize my finances.",
 ];
+
 
 export default function AiAdvisorPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([
@@ -204,7 +205,7 @@ export default function AiAdvisorPage() {
                 Savings Rate
               </span>
               <span className="font-display font-bold text-sm text-white">
-                {summary.savingsRate}%
+                {Number(summary.savingsRate || 0).toFixed(1)}%
               </span>
             </div>
           </Card>
@@ -277,12 +278,13 @@ export default function AiAdvisorPage() {
                   {m.role === "user" ? "ME" : "AI"}
                 </div>
                 <div
-                  className={`p-4 rounded-md text-xs leading-relaxed whitespace-pre-line ${
+                  className={`p-4 rounded-md text-xs leading-relaxed whitespace-pre-wrap font-sans ${
                     m.role === "user"
                       ? "bg-cyan-subtle/80 border border-border-accent text-white"
                       : "bg-background-elevated border border-border-subtle text-slate-200"
                   }`}
                 >
+
                   {m.content}
                 </div>
               </div>

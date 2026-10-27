@@ -63,6 +63,23 @@ export const Sidebar: React.FC = () => {
     },
   ];
 
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const user = mounted ? AuthUtils.getUser() : null;
+  const displayName = user?.name || "NexWealth User";
+  const initials =
+    displayName
+      .split(" ")
+      .map((p) => p[0])
+      .filter(Boolean)
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() || "NW";
+
   return (
     <aside className="w-64 bg-background-surface border-r border-border-subtle flex flex-col fixed inset-y-0 left-0 z-40">
       {/* Brand Header */}
@@ -123,16 +140,22 @@ export const Sidebar: React.FC = () => {
           href="/profile"
           className="flex items-center gap-3 p-2 rounded-sm bg-background-elevated border border-border-subtle hover:border-border-accent transition-colors"
         >
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-800 to-cyan-500 flex items-center justify-center font-bold text-xs text-white border border-border-accent">
-            ND
+          <div
+            suppressHydrationWarning
+            className="w-8 h-8 rounded-full bg-gradient-to-br from-slate-800 to-cyan-500 flex items-center justify-center font-bold text-xs text-white border border-border-accent"
+          >
+            {initials}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="text-xs font-bold text-white truncate">NexWealth Demo</div>
+            <div suppressHydrationWarning className="text-xs font-bold text-white truncate">
+              {displayName}
+            </div>
             <div className="text-[10px] text-mint-400 flex items-center gap-1">
-              <span>● Verified (INR)</span>
+              <span>● Active (INR)</span>
             </div>
           </div>
         </Link>
+
 
         <button
           onClick={handleLogout}

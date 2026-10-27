@@ -29,11 +29,12 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
+# Python virtualenvs
+.venv/lib/
+venv/lib/
+env/lib/
+!frontend/lib/
+
 wheels/
 *.egg-info/
 .installed.cfg
@@ -49,6 +50,7 @@ node_modules/
 .next/
 out/
 .vercel
+*.tsbuildinfo
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

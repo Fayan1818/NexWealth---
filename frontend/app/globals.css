@@ -6,7 +6,38 @@
 
 :root {
   --background: #060d13;
+  --background-surface: #0a151f;
+  --background-elevated: #0f1f2d;
+  --card: #0c1824;
+  --card-hover: #102130;
+  --card-subtle: #08121a;
   --foreground: #ffffff;
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-light: rgba(255, 255, 255, 0.1);
+  --border-accent: rgba(0, 242, 254, 0.25);
+  --border-mint: rgba(0, 245, 160, 0.25);
+  --cyan-subtle: rgba(0, 242, 254, 0.12);
+  --mint-subtle: rgba(0, 245, 160, 0.12);
+}
+
+html.theme-light,
+body.theme-light,
+.theme-light,
+[data-theme="light"] {
+  --background: #f8fafc;
+  --background-surface: #ffffff;
+  --background-elevated: #f1f5f9;
+  --card: #ffffff;
+  --card-hover: #f8fafc;
+  --card-subtle: #f8fafc;
+  --foreground: #0f172a;
+  --border-subtle: #e2e8f0;
+  --border-light: #cbd5e1;
+  --border-accent: rgba(2, 132, 199, 0.35);
+  --border-mint: rgba(16, 185, 129, 0.35);
+  --cyan-subtle: rgba(2, 132, 199, 0.08);
+  --mint-subtle: rgba(16, 185, 129, 0.08);
+  color-scheme: light;
 }
 
 body {
@@ -14,15 +45,16 @@ body {
   background: var(--background);
   font-family: 'Plus Jakarta Sans', sans-serif;
   overflow-x: hidden;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* Custom Scrollbars */
+/* Scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #060d13;
+  background: var(--background);
 }
 ::-webkit-scrollbar-thumb {
   background: #152735;
@@ -30,4 +62,198 @@ body {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #00b4cc;
+}
+
+.theme-light ::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+.theme-light ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+.theme-light ::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* ==========================================================================
+   LIGHT THEME OVERRIDES (.theme-light & [data-theme="light"])
+   ========================================================================== */
+
+.theme-light body {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+/* Surfaces and Backgrounds */
+.theme-light .bg-background {
+  background-color: #f8fafc !important;
+}
+.theme-light .bg-background\/85 {
+  background-color: rgba(255, 255, 255, 0.92) !important;
+}
+.theme-light .bg-background-surface {
+  background-color: #ffffff !important;
+}
+.theme-light .bg-background-elevated {
+  background-color: #f1f5f9 !important;
+}
+.theme-light .bg-card {
+  background-color: #ffffff !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05) !important;
+}
+.theme-light .bg-card-hover:hover {
+  background-color: #f8fafc !important;
+}
+.theme-light .bg-card-subtle {
+  background-color: #f8fafc !important;
+}
+
+/* Borders */
+.theme-light .border-border-subtle {
+  border-color: #e2e8f0 !important;
+}
+.theme-light .border-border-light {
+  border-color: #cbd5e1 !important;
+}
+.theme-light .border-border-accent {
+  border-color: #38bdf8 !important;
+}
+
+/* Subtle backgrounds */
+.theme-light .bg-cyan-subtle {
+  background-color: #f0f9ff !important;
+}
+.theme-light .bg-mint-subtle {
+  background-color: #ecfdf5 !important;
+}
+
+/* Headings and Titles */
+.theme-light h1,
+.theme-light h2,
+.theme-light h3,
+.theme-light h4,
+.theme-light h5,
+.theme-light h6 {
+  color: #0f172a !important;
+}
+
+/* Primary text headings & numbers: convert text-white to dark slate unless on colored buttons */
+.theme-light .text-white:not(
+  button.bg-cyan-500,
+  button.bg-blue-600,
+  button.bg-emerald-600,
+  button.bg-red-500,
+  button.bg-gradient-to-r,
+  button.bg-gradient-to-br,
+  .bg-cyan-500,
+  .bg-blue-600,
+  .bg-emerald-600,
+  .bg-red-500,
+  .btn-colored,
+  .btn-colored *,
+  .badge-solid,
+  .bg-gradient-to-r *,
+  .bg-gradient-to-br *
+) {
+  color: #0f172a !important;
+}
+
+/* Secondary slate colors adjusted for light background */
+.theme-light .text-slate-100 {
+  color: #1e293b !important;
+}
+.theme-light .text-slate-200 {
+  color: #1e293b !important;
+}
+.theme-light .text-slate-300 {
+  color: #334155 !important;
+}
+.theme-light .text-slate-400 {
+  color: #475569 !important;
+}
+.theme-light .text-slate-500 {
+  color: #64748b !important;
+}
+
+/* Accents tuned for high contrast in light mode */
+.theme-light .text-cyan-400 {
+  color: #0284c7 !important;
+}
+.theme-light .text-cyan-300 {
+  color: #0369a1 !important;
+}
+.theme-light .text-mint-400 {
+  color: #059669 !important;
+}
+.theme-light .text-mint-300 {
+  color: #047857 !important;
+}
+
+/* Sidebar navigation links */
+.theme-light aside {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+.theme-light aside a {
+  color: #475569 !important;
+}
+.theme-light aside a:hover {
+  background-color: #f1f5f9 !important;
+  color: #0284c7 !important;
+}
+.theme-light aside a.bg-background-elevated {
+  background-color: #f0f9ff !important;
+  color: #0284c7 !important;
+  border-color: #bae6fd !important;
+}
+
+/* Form Controls: Inputs, selects, and textareas */
+.theme-light input:not([type="checkbox"]):not([type="radio"]),
+.theme-light select,
+.theme-light textarea {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+.theme-light input:focus,
+.theme-light select:focus,
+.theme-light textarea:focus {
+  border-color: #0284c7 !important;
+  outline-color: #0284c7 !important;
+}
+.theme-light input::placeholder,
+.theme-light textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* Tables in Light Theme */
+.theme-light table {
+  background-color: #ffffff !important;
+}
+.theme-light table thead tr {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+.theme-light table th {
+  color: #475569 !important;
+  border-color: #e2e8f0 !important;
+}
+.theme-light table td {
+  border-color: #e2e8f0 !important;
+}
+.theme-light table tbody tr:hover {
+  background-color: #f8fafc !important;
+}
+
+/* Dialogs, Modals & Dropdowns */
+.theme-light .fixed.inset-0.bg-black\/80 {
+  background-color: rgba(15, 23, 42, 0.45) !important;
+  backdrop-filter: blur(4px) !important;
+}
+.theme-light [role="dialog"],
+.theme-light .fixed > .bg-card,
+.theme-light .fixed > div > .bg-card {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
 }

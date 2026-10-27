@@ -7,4 +7,6 @@ export interface DashboardSummary {
   totalExpenses: number;
   availableSavings: number;
   savingsRate: number;
+  previousSavings?: number;
+  monthlySalary?: number;
 }

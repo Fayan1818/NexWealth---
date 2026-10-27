@@ -48,6 +48,14 @@ class BankStatementResponse(BankStatementBase):
     )
 
 
+from typing import Annotated, List, Optional
+from pydantic import BaseModel, Field, ConfigDict, PlainSerializer
+
+DecimalFloat = Annotated[
+    Decimal,
+    PlainSerializer(lambda x: float(x) if x is not None else 0.0, return_type=float),
+]
+
 class BankStatementDeleteResponse(BaseModel):
     message: str
     id: str
@@ -56,7 +64,7 @@ class BankStatementDeleteResponse(BaseModel):
 class ParsedTransactionItem(BaseModel):
     date: str = Field(..., description="Transaction date (YYYY-MM-DD)")
     description: str = Field(..., min_length=1, description="Narration / Description")
-    amount: Decimal = Field(..., gt=0, decimal_places=2, description="Amount in INR")
+    amount: DecimalFloat = Field(..., gt=0, decimal_places=2, description="Amount in INR")
     type: str = Field(..., description="'income' or 'expense'")
     category: str = Field(default="Other", description="Assigned category")
     source: str = Field(default="Bank Statement", description="Payment source / bank account")
@@ -68,8 +76,8 @@ class BankStatementParseResult(BaseModel):
     accountName: str
     status: str
     transactionCount: int
-    totalCredits: Decimal
-    totalDebits: Decimal
+    totalCredits: DecimalFloat
+    totalDebits: DecimalFloat
     transactions: List[ParsedTransactionItem]
 
 

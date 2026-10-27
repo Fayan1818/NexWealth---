@@ -16,7 +16,10 @@ import {
   updateGoal,
   addFundsToGoal,
   deleteGoal,
+  getSavingsOverview,
+  SavingsOverview,
 } from "@/lib/api/goal";
+
 import {
   Plus,
   Pencil,
@@ -69,12 +72,19 @@ export default function GoalsPage() {
   // Success Notification State
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  // User Savings Pool State
+  const [savingsOverview, setSavingsOverview] = useState<SavingsOverview | null>(null);
+
   const fetchGoalList = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await getGoals();
-      setGoals(data);
+      const [goalsData, savingsData] = await Promise.all([
+        getGoals(),
+        getSavingsOverview(),
+      ]);
+      setGoals(goalsData);
+      setSavingsOverview(savingsData);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to load savings goals";
       setError(msg);
@@ -87,6 +97,11 @@ export default function GoalsPage() {
     fetchGoalList();
   }, [fetchGoalList]);
 
+  // Available savings calculation considering current editing goal
+  const effectiveAvailableSavings =
+    (savingsOverview?.unallocatedSavings || 0) +
+    (editingGoal ? Number(editingGoal.currentAmount) || 0 : 0);
+
   // Open Add Modal
   const handleOpenAddModal = () => {
     setEditingGoal(null);
@@ -95,7 +110,7 @@ export default function GoalsPage() {
       targetAmount: "",
       currentAmount: "0",
       targetDate: "",
-      monthlyContribution: "0",
+      monthlyContribution: savingsOverview ? String(savingsOverview.unallocatedMonthlySavings || 0) : "0",
     });
     setFormErrors({});
     setIsModalOpen(true);
@@ -135,9 +150,11 @@ export default function GoalsPage() {
       errors.targetAmount = "Target amount must be greater than 0.";
     }
 
-    const current = parseFloat(formData.currentAmount);
-    if (formData.currentAmount !== "" && (isNaN(current) || current < 0)) {
+    const current = parseFloat(formData.currentAmount || "0");
+    if (isNaN(current) || current < 0) {
       errors.currentAmount = "Current amount cannot be negative.";
+    } else if (current > effectiveAvailableSavings) {
+      errors.currentAmount = `Starting allocation (${formatINR(current)}) cannot exceed your available liquid savings pool (${formatINR(effectiveAvailableSavings)}).`;
     }
 
     if (!formData.targetDate) {
@@ -155,6 +172,7 @@ export default function GoalsPage() {
 
   // Handle Submit (Create or Update)
   const handleSubmit = async (e: React.FormEvent) => {
+
     e.preventDefault();
     if (!validateForm()) return;
 
@@ -207,8 +225,17 @@ export default function GoalsPage() {
       return;
     }
 
+    const availablePool = savingsOverview?.unallocatedSavings || 0;
+    if (amount > availablePool) {
+      setFundError(
+        `Deposit amount (${formatINR(amount)}) exceeds your available liquid savings pool of ${formatINR(availablePool)}.`
+      );
+      return;
+    }
+
     setIsFunding(true);
     setFundError(null);
+
     try {
       await addFundsToGoal(fundingGoal.id, { amount });
       setSuccessMessage(`Successfully added ${formatINR(amount)} to "${fundingGoal.name}".`);
@@ -220,6 +247,32 @@ export default function GoalsPage() {
       setFundError(msg);
     } finally {
       setIsFunding(false);
+    }
+  };
+
+  // Handle Deduct Monthly Contribution from Available Savings
+  const handleDeductMonthlyContribution = async (goal: Goal) => {
+    const monthlyAmt = Number(goal.monthlyContribution) || 0;
+    if (monthlyAmt <= 0) return;
+
+    const availablePool = savingsOverview?.unallocatedSavings || 0;
+    if (monthlyAmt > availablePool) {
+      setError(
+        `Cannot deduct monthly contribution (${formatINR(monthlyAmt)}): exceeds available savings pool of ${formatINR(availablePool)}.`
+      );
+      return;
+    }
+
+    try {
+      await addFundsToGoal(goal.id, { amount: monthlyAmt });
+      setSuccessMessage(
+        `Successfully deducted monthly contribution of ${formatINR(monthlyAmt)} from available savings into "${goal.name}".`
+      );
+      await fetchGoalList();
+      setTimeout(() => setSuccessMessage(null), 3500);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to deduct monthly contribution.";
+      setError(msg);
     }
   };
 
@@ -358,7 +411,7 @@ export default function GoalsPage() {
             </div>
           </div>
           <div className="font-display font-black text-2xl text-mint-400">
-            {metrics.overallProgress.toFixed(1)}%
+            {(Number(metrics.overallProgress) || 0).toFixed(1)}%
           </div>
           <div className="w-full bg-background-elevated h-1.5 rounded-full overflow-hidden mt-3">
             <div
@@ -462,15 +515,28 @@ export default function GoalsPage() {
                 </div>
 
                 {/* Actions Footer */}
-                <div className="pt-4 border-t border-border-subtle flex justify-between items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleOpenAddFunds(goal)}
-                    className="text-xs hover:border-mint-400 hover:text-mint-400"
-                  >
-                    + Add Funds
-                  </Button>
+                <div className="pt-4 border-t border-border-subtle flex flex-wrap justify-between items-center gap-2">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleOpenAddFunds(goal)}
+                      className="text-xs hover:border-cyan-400 hover:text-cyan-400"
+                    >
+                      + Add Funds
+                    </Button>
+                    {goal.monthlyContribution > 0 && (
+                      <Button
+                        variant="mint"
+                        size="sm"
+                        onClick={() => handleDeductMonthlyContribution(goal)}
+                        className="text-xs"
+                        title="Deduct monthly contribution from available savings and add to goal"
+                      >
+                        Deduct Monthly ({formatINR(goal.monthlyContribution)})
+                      </Button>
+                    )}
+                  </div>
 
                   <div className="flex items-center gap-1">
                     <button
@@ -511,6 +577,22 @@ export default function GoalsPage() {
               </button>
             </div>
 
+            {/* Savings Pool Info Banner */}
+            <div className="mb-4 p-3 rounded-lg bg-cyan-subtle border border-border-accent text-xs">
+              <div className="flex justify-between items-center text-cyan-300 font-bold mb-1">
+                <span>Available Liquid Savings:</span>
+                <span className="font-mono text-sm text-white">
+                  {formatINR(effectiveAvailableSavings)}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-slate-400 text-[11px]">
+                <span>Monthly Savings Flow:</span>
+                <span className="text-mint-400 font-bold">
+                  {formatINR(savingsOverview?.monthlySavings || 0)}/mo
+                </span>
+              </div>
+            </div>
+
             <form onSubmit={handleSubmit} className="space-y-4">
               {formErrors.submit && (
                 <div className="p-3 rounded-sm bg-red-500/10 border border-red-500/30 text-xs text-red-400 flex items-center gap-2">
@@ -528,7 +610,7 @@ export default function GoalsPage() {
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="e.g., Emergency Liquidity Reserve, Tesla Fund, Home Downpayment"
+                  placeholder="e.g., Car Purchase (2028), Emergency Reserve, Luxury Vacation"
                 />
                 {formErrors.name && (
                   <div className="text-xs text-red-400 mt-1">{formErrors.name}</div>
@@ -549,7 +631,7 @@ export default function GoalsPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, targetAmount: e.target.value })
                     }
-                    placeholder="e.g., 500000"
+                    placeholder="e.g., 1500000"
                   />
                   {formErrors.targetAmount && (
                     <div className="text-xs text-red-400 mt-1">
@@ -560,18 +642,22 @@ export default function GoalsPage() {
 
                 <div>
                   <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
-                    Current Saved (₹)
+                    Allocate from Savings (₹)
                   </label>
                   <Input
                     type="number"
                     step="0.01"
                     min="0"
+                    max={effectiveAvailableSavings}
                     value={formData.currentAmount}
                     onChange={(e) =>
                       setFormData({ ...formData, currentAmount: e.target.value })
                     }
-                    placeholder="e.g., 50000"
+                    placeholder="e.g., 350000"
                   />
+                  <span className="text-[10px] text-slate-400 mt-1 block">
+                    Max: {formatINR(effectiveAvailableSavings)} (start from savings, keep rest for other needs)
+                  </span>
                   {formErrors.currentAmount && (
                     <div className="text-xs text-red-400 mt-1">
                       {formErrors.currentAmount}
@@ -612,6 +698,9 @@ export default function GoalsPage() {
                     }
                     placeholder="e.g., 25000"
                   />
+                  <span className="text-[10px] text-slate-400 mt-1 block">
+                    Cut from your {formatINR(savingsOverview?.monthlySavings || 0)} monthly savings
+                  </span>
                   {formErrors.monthlyContribution && (
                     <div className="text-xs text-red-400 mt-1">
                       {formErrors.monthlyContribution}
@@ -619,6 +708,7 @@ export default function GoalsPage() {
                   )}
                 </div>
               </div>
+
 
               {/* Form Buttons */}
               <div className="pt-4 border-t border-border-subtle flex justify-end gap-3">

@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
+
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,10 +19,13 @@ import {
 } from "lucide-react";
 import { formatINR } from "@/lib/utils/currency";
 import { getDashboardSummary } from "@/lib/api/dashboard";
+import { getAnalyticsSummary } from "@/lib/api/analytics";
 import { DashboardSummary } from "@/types/dashboard";
+import { AnalyticsSummary } from "@/types/analytics";
 
 export default function DashboardPage() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  const [analytics, setAnalytics] = useState<AnalyticsSummary | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,8 +33,14 @@ export default function DashboardPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await getDashboardSummary();
-      setSummary(data);
+      const [dashData, analyticsData] = await Promise.all([
+        getDashboardSummary(),
+        getAnalyticsSummary().catch(() => null),
+      ]);
+      setSummary(dashData);
+      if (analyticsData) {
+        setAnalytics(analyticsData);
+      }
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : "Failed to load dashboard summary";
@@ -53,14 +64,33 @@ export default function DashboardPage() {
               Welcome to NexWealth 👋
             </h2>
             <p className="text-sm text-slate-300 mt-1">
-              Real-time portfolio metrics operating at optimal efficiency. Single Source of Truth:{" "}
-              <code className="text-cyan-400 font-mono">NEXWEALTH_DATA_CONTRACT.md</code>
+              Real-time portfolio metrics operating at optimal efficiency.
             </p>
+            {((summary?.previousSavings && summary.previousSavings > 0) ||
+              (summary?.monthlySalary && summary.monthlySalary > 0)) && (
+              <div className="flex flex-wrap items-center gap-2 mt-3">
+                {summary?.monthlySalary && summary.monthlySalary > 0 && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-cyan-500/15 border border-cyan-500/30 text-cyan-300 text-xs font-semibold">
+                    💼 Monthly Salary: {formatINR(summary.monthlySalary)}
+                  </span>
+                )}
+                {summary?.previousSavings && summary.previousSavings > 0 && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-mint-500/15 border border-mint-500/30 text-mint-300 text-xs font-semibold">
+                    💰 Previous Savings: {formatINR(summary.previousSavings)}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
           <div className="flex gap-3">
-            <Button variant="primary">+ Record Income</Button>
-            <Button variant="mint">+ Record Expense</Button>
+            <Link href="/income">
+              <Button variant="primary">+ Record Income</Button>
+            </Link>
+            <Link href="/expenses">
+              <Button variant="mint">+ Record Expense</Button>
+            </Link>
           </div>
+
         </div>
       </div>
 
@@ -101,7 +131,11 @@ export default function DashboardPage() {
                 {formatINR(summary?.totalIncome ?? 0)}
               </div>
             )}
-            <div className="text-xs text-mint-400 font-semibold mt-1">SUM(Income.amount)</div>
+            <div className="text-xs text-mint-400 font-semibold mt-1">
+              {summary?.monthlySalary && summary.monthlySalary > 0
+                ? `Salary: ${formatINR(summary.monthlySalary)} + Inflows`
+                : "SUM(Income.amount)"}
+            </div>
           </div>
         </Card>
 
@@ -141,13 +175,17 @@ export default function DashboardPage() {
             ) : (
               <div
                 className={`font-display font-bold text-2xl ${
-                  (summary?.availableSavings ?? 0) < 0 ? "text-amber-400" : "text-mint-400"
+                  (Number(summary?.availableSavings) || 0) < 0 ? "text-amber-400" : "text-mint-400"
                 }`}
               >
                 {formatINR(summary?.availableSavings ?? 0)}
               </div>
             )}
-            <div className="text-xs text-slate-400 font-semibold mt-1">Income - Expenses</div>
+            <div className="text-xs text-slate-400 font-semibold mt-1">
+              {summary?.previousSavings && summary.previousSavings > 0
+                ? `Liquid Pool (Incl. ${formatINR(summary.previousSavings)} prev.)`
+                : "Liquid Savings Pool"}
+            </div>
           </div>
         </Card>
 
@@ -165,7 +203,7 @@ export default function DashboardPage() {
               <div className="h-8 w-24 bg-white/10 rounded animate-pulse my-0.5" />
             ) : (
               <div className="font-display font-bold text-2xl text-cyan-400">
-                {`${(summary?.savingsRate ?? 0).toFixed(1)}%`}
+                {`${(Number(summary?.savingsRate) || 0).toFixed(1)}%`}
               </div>
             )}
             <div className="text-xs text-cyan-300 font-semibold mt-1">
@@ -176,28 +214,49 @@ export default function DashboardPage() {
       </div>
 
       {/* Visual Analytics Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        <Card className="lg:col-span-2">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="font-display font-bold text-base text-white">Cashflow Dynamics</h3>
-              <p className="text-xs text-slate-400">Income vs categorized outflow trends (INR)</p>
-            </div>
-            <Badge variant="cyan">Realtime</Badge>
-          </div>
-          <CashflowChart />
-        </Card>
+      {(() => {
+        const cashflowData =
+          analytics?.monthlyCashflow && analytics.monthlyCashflow.length > 0
+            ? analytics.monthlyCashflow.map((item) => ({
+                month: item.month,
+                income: item.income,
+                expense: item.expenses,
+              }))
+            : undefined;
 
-        <Card>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="font-display font-bold text-base text-white">Category Allocation</h3>
-              <p className="text-xs text-slate-400">Spending across 9 contract categories</p>
-            </div>
+        const categoryData =
+          analytics?.categoryBreakdown && analytics.categoryBreakdown.length > 0
+            ? analytics.categoryBreakdown.map((cat) => ({
+                name: cat.category,
+                value: cat.amount,
+              }))
+            : undefined;
+
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <Card className="lg:col-span-2">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="font-display font-bold text-base text-white">Cashflow Dynamics</h3>
+                  <p className="text-xs text-slate-400">Income vs categorized outflow trends (INR)</p>
+                </div>
+                <Badge variant="cyan">Realtime</Badge>
+              </div>
+              <CashflowChart data={cashflowData} />
+            </Card>
+
+            <Card>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="font-display font-bold text-base text-white">Category Allocation</h3>
+                  <p className="text-xs text-slate-400">Spending across active categories</p>
+                </div>
+              </div>
+              <DonutChart data={categoryData} />
+            </Card>
           </div>
-          <DonutChart />
-        </Card>
-      </div>
+        );
+      })()}
     </AppShell>
   );
 }

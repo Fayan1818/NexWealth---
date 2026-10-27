@@ -1,29 +1,34 @@
 from decimal import Decimal
-from typing import List
-from pydantic import BaseModel, ConfigDict
+from typing import Annotated, List
+from pydantic import BaseModel, ConfigDict, PlainSerializer
+
+DecimalFloat = Annotated[
+    Decimal,
+    PlainSerializer(lambda x: float(x) if x is not None else 0.0, return_type=float),
+]
 
 class FinancialOverview(BaseModel):
-    totalIncome: Decimal
-    totalExpenses: Decimal
-    availableSavings: Decimal
-    savingsRate: Decimal
+    totalIncome: DecimalFloat
+    totalExpenses: DecimalFloat
+    availableSavings: DecimalFloat
+    savingsRate: DecimalFloat
 
 class CategoryBreakdownItem(BaseModel):
     category: str
-    amount: Decimal
-    percentage: Decimal
+    amount: DecimalFloat
+    percentage: DecimalFloat
 
 class MonthlyCashflowItem(BaseModel):
     month: str  # YYYY-MM format suitable for chronological charting
-    income: Decimal
-    expenses: Decimal
-    savings: Decimal
+    income: DecimalFloat
+    expenses: DecimalFloat
+    savings: DecimalFloat
 
 class InvestmentOverview(BaseModel):
-    totalInvested: Decimal
-    currentValue: Decimal
-    gainLoss: Decimal
-    returnPercent: Decimal
+    totalInvested: DecimalFloat
+    currentValue: DecimalFloat
+    gainLoss: DecimalFloat
+    returnPercent: DecimalFloat
 
 class AnalyticsSummaryResponse(BaseModel):
     overview: FinancialOverview

@@ -19,6 +19,8 @@ from fastapi import UploadFile, HTTPException, status
 from app.core.config import settings
 from app.models.bank_statement import BankStatement
 from app.models.transaction import Transaction
+from app.models.income import Income
+from app.models.expense import Expense, EXPENSE_CATEGORIES
 from app.schemas.bank_statement import (
     BankStatementCreate,
     BankStatementUpdate,
@@ -537,22 +539,48 @@ def import_parsed_transactions(
     transactions_in: List[ParsedTransactionItem],
 ) -> int:
     """
-    Insert validated parsed transactions into the user's unified Transactions ledger.
+    Insert validated parsed transactions into the user's unified Transactions ledger,
+    as well as Income and Expense records so all metrics across Dashboard, Analytics,
+    and Cashflow reflect the imported statements immediately.
     """
     count = 0
     for item in transactions_in:
+        item_date = datetime.strptime(item.date, "%Y-%m-%d").date()
+
+        # 1. Unified Transaction ledger entry
         txn = Transaction(
             userId=user_id,
             type=item.type,
             description=item.description,
             amount=item.amount,
             category=item.category,
-            date=datetime.strptime(item.date, "%Y-%m-%d").date(),
+            date=item_date,
             source=item.source or statement.accountName,
         )
         db.add(txn)
+
+        # 2. Mirror into Income or Expense for dashboard calculations
+        if item.type == "income":
+            inc = Income(
+                userId=user_id,
+                source=item.description or item.source or statement.accountName,
+                amount=item.amount,
+                date=item_date,
+            )
+            db.add(inc)
+        elif item.type == "expense":
+            cat = item.category if item.category in EXPENSE_CATEGORIES else "Other"
+            exp = Expense(
+                userId=user_id,
+                description=item.description or "Bank Statement Outflow",
+                amount=item.amount,
+                category=cat,
+                date=item_date,
+            )
+            db.add(exp)
+
         count += 1
 
-    statement.status = "parsed"
+    statement.status = "imported"
     db.commit()
     return count

@@ -3,12 +3,14 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, IndianRupee, LogOut } from "lucide-react";
+import { Bell, IndianRupee, LogOut, Sun, Moon } from "lucide-react";
 import { AuthUtils } from "@/lib/auth/jwt";
+import { useTheme } from "@/components/theme/theme-provider";
 
 export const Header: React.FC = () => {
   const pathname = usePathname();
   const router = useRouter();
+  const { theme, toggleTheme } = useTheme();
 
   const handleLogout = () => {
     AuthUtils.removeToken();
@@ -49,7 +51,7 @@ export const Header: React.FC = () => {
   };
 
   return (
-    <header className="h-18 px-8 bg-background/85 backdrop-blur-md border-b border-border-subtle flex items-center justify-between sticky top-0 z-30">
+    <header className="h-18 px-8 bg-background/85 backdrop-blur-md border-b border-border-subtle flex items-center justify-between sticky top-0 z-30 transition-colors duration-200">
       <div className="flex flex-col">
         <h1 className="font-display font-extrabold text-xl text-white tracking-tight">
           {getPageTitle()}
@@ -65,6 +67,21 @@ export const Header: React.FC = () => {
           <IndianRupee className="w-3.5 h-3.5" />
           <span>Locked: INR (₹)</span>
         </div>
+
+        {/* Theme Toggle Button */}
+        <button
+          id="theme-toggle-btn"
+          onClick={toggleTheme}
+          title={theme === "light" ? "Switch to Dark Theme" : "Switch to Light Theme"}
+          className="w-9 h-9 rounded-sm bg-background-elevated border border-border-subtle flex items-center justify-center text-slate-400 hover:text-cyan-400 hover:border-border-accent transition-all shadow-sm group cursor-pointer"
+          aria-label="Toggle Theme"
+        >
+          {theme === "light" ? (
+            <Moon className="w-4 h-4 text-cyan-700 group-hover:scale-110 transition-transform" />
+          ) : (
+            <Sun className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
+          )}
+        </button>
 
         {/* Notifications Icon */}
         <Link
